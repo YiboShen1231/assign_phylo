@@ -216,8 +216,10 @@ def plot_nj_tree(tree: Node, ax: Axes = None, **kwargs) -> None:
                     color="black", linewidth=1.5)
 
         if node.left is None and node.right is None:
+            label_colors = kwargs.get("label_colors", {})
+            color = label_colors.get(node.name, "black")
             ax.text(x, y, f"  {node.name}",
-                    fontsize=12, va="center")
+                    fontsize=12, va="center", color=color)
 
     draw_branches(tree)
 
@@ -324,7 +326,22 @@ def sort_children_by_leaves(tree: Node) -> None:
         The root node of the tree.
 
     """
-    raise NotImplementedError()
+    def count_leaves(node):
+        if node is None:
+            return 0
+        if node.left is None and node.right is None:
+            return 1
+
+        left = count_leaves(node.left)
+        right = count_leaves(node.right)
+
+        if left > right:
+            node.left, node.right = node.right, node.left
+            node.left_distance, node.right_distance = node.right_distance, node.left_distance
+
+        return left + right
+
+    count_leaves(tree)
 
 
 def plot_nj_tree_radial(tree: Node, ax: Axes = None, **kwargs) -> None:
