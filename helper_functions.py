@@ -70,10 +70,63 @@ def neighbor_joining(distances: np.ndarray, labels: list) -> Node:
         A root node of the neighbor joining tree.
 
     """
-    
-    self.tree = Node()
 
-    raise NotImplementedError()
+
+    D = np.array(distances, dtype=float, copy=True)
+    nodes = [Node(str(label), None, 0, None, 0) for label in labels]
+    node_count = 0
+    while len(nodes) > 2:
+        n = len(nodes)
+        row_sums = np.sum(D, axis=1)
+        Q = (n - 2) * D - row_sums[:, None] - row_sums[None, :]
+
+        np.fill_diagonal(Q, np.inf)
+
+        i, j = np.unravel_index(np.argmin(Q), Q.shape)
+
+        distance_ij = D[i, j]
+
+        left_length = (
+            distance_ij / 2
+            + (row_sums[i] - row_sums[j]) / (2 * (n - 2))
+        )
+        right_length = distance_ij - left_length
+
+        node_count += 1
+        new_node = Node(
+            f"INTERNAL_{node_count}",
+            nodes[i],
+            float(left_length),
+            nodes[j],
+            float(right_length),
+        )
+        remaining = [k for k in range(n) if k not in (i, j)]
+
+        new_distances = [
+            (D[i, k] + D[j, k] - distance_ij) / 2
+            for k in remaining
+        ]
+
+        D = D[np.ix_(remaining, remaining)]
+
+        D = np.pad(D, ((0, 1), (0, 1)), mode="constant")
+        D[-1, :-1] = new_distances
+        D[:-1, -1] = new_distances
+        nodes = [nodes[k] for k in remaining]
+        nodes.append(new_node)
+        
+    final_distance = float(D[0, 1])
+
+    root = Node(
+        "ROOT",
+        nodes[0],
+        final_distance / 2,
+        nodes[1],
+        final_distance / 2,
+    )
+
+    return root
+
 
 
 def plot_nj_tree(tree: Node, ax: Axes = None, **kwargs) -> None:
