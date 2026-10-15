@@ -114,7 +114,7 @@ def neighbor_joining(distances: np.ndarray, labels: list) -> Node:
         D[:-1, -1] = new_distances
         nodes = [nodes[k] for k in remaining]
         nodes.append(new_node)
-        
+
     final_distance = float(D[0, 1])
 
     root = Node(
@@ -153,7 +153,85 @@ def plot_nj_tree(tree: Node, ax: Axes = None, **kwargs) -> None:
 
     """
 
+    import matplotlib.pyplot as plt
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(10, 6))
+
+    positions = {}
+    leaf_count = 0
+
+    def calculate_positions(node, x):
+        nonlocal leaf_count
+
+        if node.left is None and node.right is None:
+            y = leaf_count
+            leaf_count += 1
+            positions[id(node)] = (x, y)
+            return y
+
+        child_ys = []
+
+        if node.left is not None:
+            left_y = calculate_positions(
+                node.left, x + node.left_distance
+            )
+            child_ys.append(left_y)
+
+        if node.right is not None:
+            right_y = calculate_positions(
+                node.right, x + node.right_distance
+            )
+            child_ys.append(right_y)
+
+        y = sum(child_ys) / len(child_ys)
+        positions[id(node)] = (x, y)
+
+        return y
+
+    calculate_positions(tree, 0)
+
+    def draw_branches(node):
+        x, y = positions[id(node)]
+
+        for child, distance in [
+            (node.left, node.left_distance),
+            (node.right, node.right_distance),
+        ]:
+            if child is None:
+                continue
+
+            child_x, child_y = positions[id(child)]
+
+            ax.plot([x, child_x], [child_y, child_y],
+                    color="black", linewidth=1.5)
+
+            draw_branches(child)
+
+        if node.left is not None and node.right is not None:
+            left_y = positions[id(node.left)][1]
+            right_y = positions[id(node.right)][1]
+
+            ax.plot([x, x], [left_y, right_y],
+                    color="black", linewidth=1.5)
+
+        if node.left is None and node.right is None:
+            ax.text(x, y, f"  {node.name}",
+                    fontsize=12, va="center")
+
+    draw_branches(tree)
+
+    ax.set_xlabel("Genetic distance")
+    ax.set_yticks([])
+    ax.invert_yaxis()
+
+    for side in ["top", "right", "left"]:
+        ax.spines[side].set_visible(False)
+
+    ax.margins(x=0.15, y=0.1)
+
     return ax
+
 
 
 def _find_a_parent_to_node(tree: Node, node: Node) -> tuple:
