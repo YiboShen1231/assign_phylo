@@ -220,6 +220,10 @@ def plot_nj_tree(tree: Node, ax: Axes = None, **kwargs) -> None:
             color = label_colors.get(node.name, "black")
             ax.text(x, y, f"  {node.name}",
                     fontsize=12, va="center", color=color)
+        elif kwargs.get("show_confidence", False) and node is not tree:
+            if node.confidence is not None:
+                ax.text(x, y, f"{node.confidence:.0%}",
+                        fontsize=9, color="blue", va="bottom")
 
     draw_branches(tree)
 
